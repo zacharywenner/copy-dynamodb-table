@@ -62,6 +62,7 @@ function copy(values, fn) {
 
   checkTables(options,function(err,data){ // check if source and destination table exist
     if(err){
+      console.log('checktables error', {err})
       return fn(err,data)
     }
     startCopying(options,fn)
@@ -119,8 +120,35 @@ function clearTableSchema(table){
     }
     delete table.SSEDescription
   }
-
+  provisionedThroughput(table);
   return table
+}
+
+function provisionedThroughput(table){
+
+  console.log('provisionedThroughput');
+  const defaultValue=5;
+  
+  if (table.ProvisionedThroughput.ReadCapacityUnits === 0) {
+      table.ProvisionedThroughput.ReadCapacityUnits = defaultValue;
+  }
+  
+  if (table.ProvisionedThroughput.WriteCapacityUnits === 0) {
+      table.ProvisionedThroughput.WriteCapacityUnits = defaultValue;
+  }
+  
+  if(table.GlobalSecondaryIndexes && table.GlobalSecondaryIndexes.length > 0){
+    for(var index= 0; index < table.GlobalSecondaryIndexes.length; index++)
+    {
+      if (table.GlobalSecondaryIndexes[index].ProvisionedThroughput.ReadCapacityUnits === 0) {
+      table.GlobalSecondaryIndexes[index].ProvisionedThroughput.ReadCapacityUnits = defaultValue;
+      }
+      if (table.GlobalSecondaryIndexes[index].ProvisionedThroughput.WriteCapacityUnits === 0) {
+      table.GlobalSecondaryIndexes[index].ProvisionedThroughput.WriteCapacityUnits = defaultValue;
+      }
+    }
+  }
+  
 }
 
 function checkTables(options,fn){
@@ -176,6 +204,7 @@ function startCopying(options,fn){
     options.key = data.LastEvaluatedKey
     putItems(options, function (err) {
       if (err) {
+        console.log("The error is here", err);
         return fn(err)
       }
 
